@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+
+<head>
+    <title>Generic Clicker</title>
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@beta/dist/js.cookie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/erosson/swarm-numberformat@v0.1.0/dist/swarm-numberformat.min.js"></script>
+    <script>
+        var clicker = {
+            generics: 0,
+            upgrades: {
+                generic_machine: {
+                    amount: 0,
+                    cost: 10,
+                    gps: 1,
+                    hasun: false,
+                    unlocked: 1,
+                    name: "Crochet Needles"
+                },
+                generic_factory: {
+                    amount: 0,
+                    cost: 20,
+
+
+                    gps: 10,
+                    hasun: false,
+                    unlocked: 15,
+                    name: "Knitting Needles"
+                },
+                generic_world: {
+                    amount: 0,
+                    cost: 50,
+                    gps: 20,
+                    hasun:  false,
+                    unlocked: 40,
+                    name: "Sewing Machine"
+                }
+            },
+            achieves: [{ req: "clicker.generics>0", gotten: false, text: "You have one generic <br>" },{req:"clicker.generics>9",gotten:false,text:"you have gotten ten generics"}]
+        };
+        var delay = 0;
+        var gps = 0;
+        function thing_clicked(thing) {
+            if (clicker.upgrades[thing].cost <= clicker.generics) {
+                clicker.generics -= clicker.upgrades[thing].cost;
+                clicker.upgrades[thing].amount++;
+                clicker.upgrades[thing].cost += Math.round(clicker.upgrades[thing].cost * 0.15);
+                update_upgrades();
+            }
+        }
+        function update_upgrades() {
+            document.querySelector("#upgrades").innerHTML = ""
+            var d = 0;
+            for (i in clicker.upgrades) {
+                if(clicker.upgrades[i].hasun){
+                document.querySelector('#upgrades').innerHTML += `<br> <button onclick="thing_clicked('${i}')">${clicker.upgrades[i].name}</button> you have ${numberformat.format(clicker.upgrades[i].amount)}. Cost: ${numberformat.format(clicker.upgrades[i].cost)}`;
+                d+= clicker.upgrades[i].gps * clicker.upgrades[i].amount;
+                }
+            }
+            gps = d;
+        }
+        function updatecount() {
+            if (Cookies.get("clicker") != null && Cookies.get("clicker") != "undefined") {
+                var clicker1 = JSON.parse(Cookies.get("clicker"));
+                for (i in clicker.upgrades) {
+                    if (clicker1.upgrades[i] == null) {
+                        clicker1.upgrades[i] = clicker.upgrades[i];
+                    }
+                }
+                clicker = clicker1;
+
+                for (i in clicker.achieves) {
+                    if (clicker1.achieves[i] == null || clicker.achieves[i].text != clicker1.achieves[i].text) {
+
+                    }
+                }
+                clicker = clicker1;
+            }
+            update_upgrades();
+            if(Cookies.get("lasttime") != null){
+                var lastsavedate = Number(Cookies.get("lasttime"));
+                lastsavedate = Date.now() - lastsavedate;
+                lastsavedate = Math.round(lastsavedate / 1000);
+                if(lastsavedate / 60 >= 1){
+                    clicker.generics += lastsavedate * gps / 1.8;
+                    document.querySelector("#achieves").innerHTML += `<br>While you were gone, you got ${numberformat.format(lastsavedate*gps/1.8)} generics`
+                }
+            }
+            setInterval(() => {
+                for (i in clicker.upgrades) {
+                    clicker.generics += clicker.upgrades[i].amount * clicker.upgrades[i].gps / 20
+                }
+                for(i in clicker.achieves){
+                    var b = new Function('return '+clicker.achieves[i].req)
+                    if(b() && !clicker.achieves[i].gotten){
+                        clicker.achieves[i].gotten = true
+                        document.querySelector("#achieves").innerHTML+=`<br<ACHIEVEMENT UNLOCKED<br>${clicker.achieves[i].text}`; 
+                    }
+                }
+                document.querySelector("#generics").innerHTML = "you have " +numberformat.format( Number(String(clicker.generics).split(".")[0])) + " generics"
+                for(i in clicker.upgrades){
+                    if(!clicker.upgrades[i].hasun && clicker.upgrades[i].unlocked <= clicker.generics){
+                    clicker.upgrades[i].hasun = true;
+                    update_upgrades();
+                    }
+                }
+                delay++;
+                if (delay >= 40) {
+                    Cookies.set("clicker", JSON.stringify(clicker), { expires: 100000 })
+                    Cookies.set("lasttime", Date.now(), {expires: 100000})
+                    delay = 0;
+                }
+            }, 50);
+        } 
+    </script>
+</head>
+
+<body onload="updatecount()">
+    <h1 id="generics">you have 0 generics</h1>
+    <button onclick="clicker.generics++">Get 1 generic</button>
+    <div id="upgrades">
+
+    </div>
+    <br>
+    <div id="achieves" style="width: 400px; height: 300px; overflow:scroll;">
+
+    </div>
+</body>
+
+</html>
